@@ -1,0 +1,116 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile representation for students, tutors, and administrators in the Digital SAT Prep platform.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user.",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the user.",
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Email address of the user.",
+          "maxLength": 180
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "tutor", "student", "guest"],
+          "description": "System role granting permissions."
+        },
+        "tier": {
+          "type": "string",
+          "enum": ["starter", "pro", "elite", "olympian"],
+          "description": "Student subscription tier level."
+        },
+        "avatarColor": {
+          "type": "string",
+          "description": "Hex or CSS color string for user avatar.",
+          "maxLength": 40
+        },
+        "highSchoolGrade": {
+          "type": "string",
+          "description": "Current school grade or graduation year.",
+          "maxLength": 60
+        },
+        "targetScore": {
+          "type": "number",
+          "description": "Target composite SAT score."
+        },
+        "mathTarget": {
+          "type": "number",
+          "description": "Target SAT Math score."
+        },
+        "rwTarget": {
+          "type": "number",
+          "description": "Target SAT Reading & Writing score."
+        },
+        "baselineScore": {
+          "type": "number",
+          "description": "Baseline SAT starting score."
+        },
+        "examDate": {
+          "type": "string",
+          "description": "Target examination date in YYYY-MM-DD format.",
+          "maxLength": 30
+        },
+        "examDateLabel": {
+          "type": "string",
+          "description": "Human-readable label for target test date.",
+          "maxLength": 100
+        },
+        "dailyGoalMinutes": {
+          "type": "number",
+          "description": "Target daily study duration in minutes."
+        },
+        "studyDaysPerWeek": {
+          "type": "array",
+          "description": "Active scheduled study days."
+        },
+        "dreamColleges": {
+          "type": "array",
+          "description": "Selected dream universities."
+        },
+        "weakestDomains": {
+          "type": "array",
+          "description": "Identified SAT domains requiring focused drill practice."
+        },
+        "bio": {
+          "type": "string",
+          "description": "Student or educator bio.",
+          "maxLength": 500
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "Contact telephone number.",
+          "maxLength": 30
+        },
+        "calculatorPreference": {
+          "type": "string",
+          "enum": ["Desmos", "Scientific", "Standard"],
+          "description": "Preferred in-drill calculator type."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of account creation.",
+          "maxLength": 40
+        }
+      },
+      "required": ["id", "name", "email", "role", "targetScore", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Collection storing user profiles, academic goals, subscriptions, and settings."
+    }
+  }
+}
