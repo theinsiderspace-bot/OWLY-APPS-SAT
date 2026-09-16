@@ -641,7 +641,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       <input
                         type="email"
                         required
-                        placeholder="jordan.davis@satprep.edu"
+                        placeholder="student@example.com"
                         value={signInEmail}
                         onChange={(e) => setSignInEmail(e.target.value)}
                         className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none"

@@ -24,20 +24,27 @@ import {
   Check,
   Eye,
   Award,
+  Users,
 } from "lucide-react";
 import { TRAINING_SECTIONS } from "../data/trainingMaterialsData";
 import { SAT_VOCABULARY_THEMES, POWER_ROOTS_AND_AFFIXES } from "../data/trainingVocabularyData";
 import { TrainingLesson, TrainingSectionModule, VocabularyWordItem, PowerRootItem } from "../data/trainingTypes";
 import { safeStorage } from "../utils/storage";
+import { UserProfile } from "../types";
+import { PeerStudyRooms } from "./PeerStudyRooms";
+import { calculateCategoryCounts, getSavedActiveRoomId } from "../services/studyRoomService";
+import { INITIAL_PEER_STUDY_ROOMS } from "../data/peerStudyRoomsData";
 
 interface TrainingAcademyViewProps {
   onStartPractice?: (sectionFilter?: string, domainFilter?: string) => void;
   onOpenFormulaGuide?: () => void;
+  currentProfile?: UserProfile;
 }
 
 export const TrainingAcademyView: React.FC<TrainingAcademyViewProps> = ({
   onStartPractice,
   onOpenFormulaGuide,
+  currentProfile,
 }) => {
   const [activeSectionId, setActiveSectionId] = useState<string>("module-strategy");
   const [selectedLessonId, setSelectedLessonId] = useState<string>("lesson-strat-1");
@@ -47,6 +54,9 @@ export const TrainingAcademyView: React.FC<TrainingAcademyViewProps> = ({
   const [completedLessonIds, setCompletedLessonIds] = useState<string[]>(() => {
     return safeStorage.get<string[]>("sat_completed_training_lessons", ["lesson-strat-1"]);
   });
+
+  const activeSavedRoomId = getSavedActiveRoomId();
+  const categoryCounts = calculateCategoryCounts(INITIAL_PEER_STUDY_ROOMS, activeSavedRoomId);
 
   // Vocabulary & Roots interactive sub-tab
   const [vocabSubTab, setVocabSubTab] = useState<"categories" | "roots" | "flashcard-trainer">("categories");
@@ -223,10 +233,57 @@ export const TrainingAcademyView: React.FC<TrainingAcademyViewProps> = ({
           <Layers className="w-4 h-4 text-amber-400" />
           <span>Lexicon & Power Roots (Ch 3)</span>
         </button>
+
+        {/* Dedicated Peer Study Rooms Tab */}
+        <button
+          onClick={() => setActiveSectionId("module-peer-study-rooms")}
+          className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-mono font-bold whitespace-nowrap transition-all border ${
+            activeSectionId === "module-peer-study-rooms"
+              ? "bg-emerald-500 text-black border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.5)]"
+              : "scifi-glass-card text-emerald-400 hover:border-emerald-500/40 border-emerald-500/20"
+          }`}
+        >
+          <div className="relative flex items-center justify-center">
+            <Users className="w-4 h-4" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 animate-ping" />
+          </div>
+          <span>Peer Study Rooms</span>
+          <span
+            className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
+              activeSectionId === "module-peer-study-rooms"
+                ? "bg-black/30 text-black"
+                : "bg-emerald-950 text-emerald-300 border border-emerald-500/30"
+            }`}
+          >
+            {categoryCounts.total} Live
+          </span>
+        </button>
       </div>
 
       {/* BODY CONTENT BASED ON ACTIVE SECTION */}
-      {activeSectionId === "module-vocabulary" ? (
+      {activeSectionId === "module-peer-study-rooms" ? (
+        /* VIRTUAL PEER STUDY ROOMS HUB */
+        <PeerStudyRooms
+          currentProfile={currentProfile}
+          onStartPractice={onStartPractice}
+          onOpenFormulaGuide={onOpenFormulaGuide}
+          onJumpToLesson={(domain) => {
+            const domainToSection: Record<string, string> = {
+              "Algebra": "module-algebra",
+              "Advanced Math": "module-advanced-math",
+              "Problem Solving & Data Analysis": "module-data-analysis",
+              "Geometry & Trigonometry": "module-additional-topics",
+              "Craft and Structure": "module-reading",
+              "Information and Ideas": "module-reading",
+              "Standard English Conventions": "module-writing",
+              "Expression of Ideas": "module-writing",
+              "General Strategy": "module-strategy",
+            };
+            const targetSec = domainToSection[domain] || "module-strategy";
+            setActiveSectionId(targetSec);
+          }}
+        />
+      ) : activeSectionId === "module-vocabulary" ? (
         /* VOCABULARY & POWER ROOTS HUB */
         <div className="space-y-6">
           {/* Sub-tabs for Vocabulary */}
@@ -693,6 +750,32 @@ export const TrainingAcademyView: React.FC<TrainingAcademyViewProps> = ({
                         ? "Completed"
                         : "Mark as Learned"}
                     </span>
+                  </button>
+                </div>
+
+                {/* Active Peer Study Room Domain Callout */}
+                <div className="bg-gradient-to-r from-cyan-950/70 via-slate-900 to-slate-950 border border-cyan-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_0_12px_rgba(6,182,212,0.1)]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-cyan-950 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shrink-0">
+                      <Users className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-mono font-bold text-white flex items-center gap-2">
+                        <span>LIVE PEER STUDY ROOM</span>
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="text-[10px] text-emerald-400 font-normal">Active students online</span>
+                      </div>
+                      <p className="text-xs font-space text-slate-300">
+                        Join peers currently active and drilling {currentSection.sectionName} topics.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setActiveSectionId("module-peer-study-rooms")}
+                    className="px-3.5 py-2 bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-mono font-bold rounded-xl flex items-center gap-1.5 transition shadow-[0_0_8px_rgba(6,182,212,0.3)] shrink-0 self-start sm:self-auto"
+                  >
+                    <span>Join Peer Room</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 

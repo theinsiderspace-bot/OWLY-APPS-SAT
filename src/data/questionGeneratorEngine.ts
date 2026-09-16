@@ -21,6 +21,26 @@ export interface DomainBreakdown {
   }[];
 }
 
+export interface TaxonomyData {
+  summaries: CategorySummary[];
+  subtopicSummaries: CategorySummary[];
+  domains: DomainBreakdown[];
+  domainBreakdowns: DomainBreakdown[];
+  totalQuestions: number;
+  totalCount: number;
+  sectionBreakdown: {
+    Math: number;
+    "Reading & Writing": number;
+    [key: string]: number;
+  };
+  difficultyBreakdown: {
+    Easy: number;
+    Medium: number;
+    Hard: number;
+    [key: string]: number;
+  };
+}
+
 function seededRandom(seed: number) {
   let s = (Math.abs(seed) + 1) % 2147483647;
   if (s <= 0) s += 2147483646;
@@ -1312,9 +1332,12 @@ function generateReadingWritingQuestions(
 
 let cachedBank: SATQuestion[] | null = null;
 
-export function generateFull10000QuestionBank(): SATQuestion[] {
-  if (cachedBank && cachedBank.length === 10000) {
+export function generateFull10000QuestionBank(forceFresh: boolean = false): SATQuestion[] {
+  if (!forceFresh && cachedBank && cachedBank.length === 10000) {
     return cachedBank;
+  }
+  if (forceFresh) {
+    cachedBank = null;
   }
 
   const seenSignatures = new Set<string>();
@@ -1368,15 +1391,28 @@ export function generateFull10000QuestionBank(): SATQuestion[] {
 
 export const generateFull5000QuestionBank = generateFull10000QuestionBank;
 
-export function getCategoryTaxonomy(questions: SATQuestion[]): {
-  summaries: CategorySummary[];
-  domains: DomainBreakdown[];
-  totalQuestions: number;
-} {
+export function getCategoryTaxonomy(questions: SATQuestion[]): TaxonomyData {
+  const safeQuestions = Array.isArray(questions) ? questions : [];
   const summaryMap = new Map<string, CategorySummary>();
   const domainMap = new Map<string, DomainBreakdown>();
+  const sectionBreakdown: Record<string, number> = {
+    Math: 0,
+    "Reading & Writing": 0,
+  };
+  const difficultyBreakdown: Record<string, number> = {
+    Easy: 0,
+    Medium: 0,
+    Hard: 0,
+  };
 
-  for (const q of questions) {
+  for (const q of safeQuestions) {
+    if (q.section) {
+      sectionBreakdown[q.section] = (sectionBreakdown[q.section] || 0) + 1;
+    }
+    if (q.difficulty) {
+      difficultyBreakdown[q.difficulty] = (difficultyBreakdown[q.difficulty] || 0) + 1;
+    }
+
     const key = `${q.section}|${q.domain}|${q.subtopic}`;
     if (!summaryMap.has(key)) {
       summaryMap.set(key, {
@@ -1421,7 +1457,21 @@ export function getCategoryTaxonomy(questions: SATQuestion[]): {
 
   return {
     summaries,
+    subtopicSummaries: summaries,
     domains,
-    totalQuestions: questions.length,
+    domainBreakdowns: domains,
+    totalQuestions: safeQuestions.length,
+    totalCount: safeQuestions.length,
+    sectionBreakdown: {
+      Math: sectionBreakdown["Math"] || 0,
+      "Reading & Writing": sectionBreakdown["Reading & Writing"] || 0,
+      ...sectionBreakdown,
+    },
+    difficultyBreakdown: {
+      Easy: difficultyBreakdown["Easy"] || 0,
+      Medium: difficultyBreakdown["Medium"] || 0,
+      Hard: difficultyBreakdown["Hard"] || 0,
+      ...difficultyBreakdown,
+    },
   };
 }

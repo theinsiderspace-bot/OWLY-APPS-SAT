@@ -893,10 +893,11 @@ export default function App() {
                 setActiveTab("practice");
               }}
               onOpenFormulaGuide={() => setActiveTab("formulas")}
+              currentProfile={currentProfile}
             />
           )}
 
-          {currentProfile.role !== "guest" && activeTab === "question-bank" && (
+          {activeTab === "question-bank" && (
             <QuestionBankHubView
               currentBank={questionBank}
               onSetBank={(newBank) => setQuestionBank(newBank)}

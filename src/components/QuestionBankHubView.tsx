@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Database,
   Layers,
@@ -47,11 +47,18 @@ export const QuestionBankHubView: React.FC<QuestionBankHubViewProps> = ({
   // State
   const [bankQuestions, setBankQuestions] = useState<SATQuestion[]>(() => {
     // If currentBank has fewer than 1000 questions, generate the full 10,000 bank
-    if (currentBank.length < 1000) {
+    if (!currentBank || currentBank.length < 1000) {
       return generateFull10000QuestionBank();
     }
     return currentBank;
   });
+
+  // Keep bankQuestions synchronized with currentBank if it changes from outside
+  useEffect(() => {
+    if (currentBank && currentBank.length >= 1000) {
+      setBankQuestions(currentBank);
+    }
+  }, [currentBank]);
 
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -63,13 +70,14 @@ export const QuestionBankHubView: React.FC<QuestionBankHubViewProps> = ({
   const [currentPage, setCurrentPage] = useState<number>(1);
   const pageSize = 20;
 
-  // Compute Taxonomy & Category Metrics
+  // Compute Taxonomy & Category Metrics with safe fallbacks
   const taxonomy = useMemo(() => {
-    return getCategoryTaxonomy(bankQuestions);
+    return getCategoryTaxonomy(bankQuestions || []);
   }, [bankQuestions]);
 
   // Filter questions based on controls
   const filteredQuestions = useMemo(() => {
+    if (!Array.isArray(bankQuestions)) return [];
     return bankQuestions.filter((q) => {
       if (selectedSection !== "All" && q.section !== selectedSection) return false;
       if (selectedDomain !== "All" && q.domain !== selectedDomain) return false;
@@ -77,10 +85,10 @@ export const QuestionBankHubView: React.FC<QuestionBankHubViewProps> = ({
       if (selectedDifficulty !== "All" && q.difficulty !== selectedDifficulty) return false;
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
-        const matchesQ = q.question.toLowerCase().includes(query);
+        const matchesQ = q.question?.toLowerCase().includes(query) || false;
         const matchesPassage = q.passage?.toLowerCase().includes(query) || false;
-        const matchesSubtopic = q.subtopic.toLowerCase().includes(query);
-        const matchesId = q.id.toLowerCase().includes(query);
+        const matchesSubtopic = q.subtopic?.toLowerCase().includes(query) || false;
+        const matchesId = q.id?.toLowerCase().includes(query) || false;
         if (!matchesQ && !matchesPassage && !matchesSubtopic && !matchesId) return false;
       }
       return true;
@@ -104,7 +112,7 @@ export const QuestionBankHubView: React.FC<QuestionBankHubViewProps> = ({
   const handleRegenerate10000 = () => {
     setIsGenerating(true);
     setTimeout(() => {
-      const new10000 = generateFull10000QuestionBank();
+      const new10000 = generateFull10000QuestionBank(true);
       setBankQuestions(new10000);
       onSetBank(new10000);
       setIsGenerating(false);
@@ -214,7 +222,7 @@ export const QuestionBankHubView: React.FC<QuestionBankHubViewProps> = ({
           <div className="scifi-glass-card p-3.5 rounded-2xl border border-cyan-500/30">
             <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">Total Questions</div>
             <div className="text-2xl font-black text-cyan-300 font-orbitron mt-0.5 drop-shadow-[0_0_8px_#00f0ff]">
-              {taxonomy.totalCount.toLocaleString()}
+              {(taxonomy?.totalCount ?? filteredQuestions.length ?? 10000).toLocaleString()}
             </div>
             <div className="text-[10px] font-mono text-emerald-400 mt-1 flex items-center gap-1">
               <CheckCircle2 className="w-3 h-3 text-emerald-400" /> 100% Calibrated
@@ -224,7 +232,7 @@ export const QuestionBankHubView: React.FC<QuestionBankHubViewProps> = ({
           <div className="scifi-glass-card p-3.5 rounded-2xl border border-cyan-500/30">
             <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">Math Modules</div>
             <div className="text-2xl font-black text-cyan-300 font-orbitron mt-0.5">
-              {taxonomy.sectionBreakdown["Math"]?.toLocaleString() || "5,000"}
+              {(taxonomy?.sectionBreakdown?.["Math"] ?? 5000).toLocaleString()}
             </div>
             <div className="text-[10px] font-mono text-slate-400 mt-1">4 Official Modules</div>
           </div>
@@ -232,7 +240,7 @@ export const QuestionBankHubView: React.FC<QuestionBankHubViewProps> = ({
           <div className="scifi-glass-card p-3.5 rounded-2xl border border-cyan-500/30">
             <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">Reading & Writing Modules</div>
             <div className="text-2xl font-black text-cyan-300 font-orbitron mt-0.5">
-              {taxonomy.sectionBreakdown["Reading & Writing"]?.toLocaleString() || "5,000"}
+              {(taxonomy?.sectionBreakdown?.["Reading & Writing"] ?? 5000).toLocaleString()}
             </div>
             <div className="text-[10px] font-mono text-slate-400 mt-1">4 Official Modules</div>
           </div>
@@ -240,7 +248,7 @@ export const QuestionBankHubView: React.FC<QuestionBankHubViewProps> = ({
           <div className="scifi-glass-card p-3.5 rounded-2xl border border-cyan-500/30">
             <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">Subtopics</div>
             <div className="text-2xl font-black text-cyan-300 font-orbitron mt-0.5">
-              {taxonomy.subtopicSummaries.length}
+              {taxonomy?.subtopicSummaries?.length ?? 56}
             </div>
             <div className="text-[10px] font-mono text-slate-400 mt-1">Easy • Med • Hard</div>
           </div>
@@ -590,8 +598,28 @@ export const QuestionBankHubView: React.FC<QuestionBankHubViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Toggle Explanation Button */}
+                  {/* Action Buttons: Ask AI Tutor, Launch Drill, View Protocol */}
                   <div className="flex items-center gap-2 shrink-0">
+                    {onOpenAiTutor && (
+                      <button
+                        onClick={() => onOpenAiTutor(q)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-mono font-bold text-cyan-300 bg-cyan-950/60 border border-cyan-500/40 rounded-lg hover:bg-cyan-500 hover:text-black transition-all cursor-pointer shadow-[0_0_8px_rgba(6,182,212,0.2)]"
+                        title="Consult Owly AI Tutor on this question"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                        <span className="hidden sm:inline">Ask AI</span>
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => onLaunchDrill([q])}
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-mono font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-500/40 rounded-lg hover:bg-emerald-500 hover:text-black transition-all cursor-pointer shadow-[0_0_8px_rgba(16,185,129,0.2)]"
+                      title="Practice this question now"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="hidden sm:inline">Drill</span>
+                    </button>
+
                     <button
                       onClick={() => setExpandedQuestionId(isExpanded ? null : q.id)}
                       className="px-3 py-1.5 text-xs font-mono font-bold text-slate-300 bg-slate-900 border border-cyan-500/30 rounded-lg hover:bg-cyan-950 hover:text-cyan-300 transition-all cursor-pointer"

@@ -568,7 +568,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
                       <input
                         type="email"
                         required
-                        placeholder="theinsiderspace@gmail.com"
+                        placeholder="student@example.com"
                         value={signInEmail}
                         onChange={(e) => {
                           setSignInEmail(e.target.value);

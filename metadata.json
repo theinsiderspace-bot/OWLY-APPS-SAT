@@ -1,6 +1,6 @@
 {
   "name": "OWLY SAT",
-  "description": "OWLY SAT - Comprehensive Digital SAT preparation platform with personalized adaptive study plans, 10,000+ categorized questions, interactive practice drills, material upload psychometrics, and Owly AI Tutor progress reports.",
+  "description": "OWLY SAT - Comprehensive Digital SAT preparation platform with personalized adaptive study plans, 10,000+ categorized questions, Training Academy with Peer Study Rooms and real-time category presence, interactive drills, and Owly AI Tutor progress reports.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
